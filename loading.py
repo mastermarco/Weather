@@ -1,4 +1,5 @@
 from debug import *
+from utils import *
 from config import *
 import pygame
 import os

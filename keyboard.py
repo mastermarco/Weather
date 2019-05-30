@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from debug import *
+from utils import *
 from config import *
 import pygame
 
