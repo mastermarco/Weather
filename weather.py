@@ -13,6 +13,8 @@ class Weather:
     clouds = []
     winds = []
     is_today = False
+    rain_hours = []
+    snow_hours = []
 
     def __init__(self, is_today=False):
         self.is_today = is_today
@@ -21,9 +23,7 @@ class Weather:
         return hours >= 6 and hours < 18
 
     def get_icon_weather(self, hours=None):
-        # print(self.weather)
         if self.is_today and hours is None:
-            print("is today you need to indicate hours")
             return None
         if self.weather == "snow":
             if self.is_today:

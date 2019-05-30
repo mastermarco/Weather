@@ -29,6 +29,13 @@ day_names = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabat
 sleeping = False
 last_motion = None
 
+button_today = None
+button_now = None
+button_tomorrow = None
+
+weather_raining_hours = [[], [], []]
+weather_snowing_hours = [[], [], []]
+
 #os.environ["SDL_FBDEV"] = "/dev/fb0"
 #os.environ["SDL_MOUSEDRV"] = "TSLIB"
 #os.environ["SDL_MOUSEDEV"] = "/dev/input/touchscreen"
@@ -262,7 +269,7 @@ def check_hit(mouse_pos, wifi_index, wifi_list, wifi_list_profile):
             textRect = textSurface.get_rect()
             textRect.center = (int(WIDTH / 2), int(HEIGHT / 2))
 
-            print(mouse_pos.x, mouse_pos.y, textRect)
+            #print(mouse_pos.x, mouse_pos.y, textRect)
             if textRect.collidepoint(mouse_pos.x, mouse_pos.y):
                 status = "insert_password_wifi"
                 return True
@@ -296,8 +303,31 @@ def check_hit_confirm_configuration(mouse_pos):
     if mouse_pos.x <= int(WIDTH/2):
         return "show weather"
     else:
-        print(mouse_pos.x)
         return "check connected"
+
+
+def check_hit_icon_today(mouse_pos):
+    global start_time, button_today
+    start_time = None
+    if button_today.collidepoint(mouse_pos.x, mouse_pos.y):
+        return True
+    return False
+
+
+def check_hit_icon_tomorrow(mouse_pos):
+    global start_time, button_tomorrow
+    start_time = None
+    if button_tomorrow.collidepoint(mouse_pos.x, mouse_pos.y):
+        return True
+    return False
+
+
+def check_hit_icon_now(mouse_pos):
+    global start_time, button_now
+    start_time = None
+    if button_now.collidepoint(mouse_pos.x, mouse_pos.y):
+        return True
+    return False
 
 
 def draw_background(status):
@@ -344,6 +374,29 @@ def draw_background(status):
         textRect = textSurface.get_rect()
         textRect.center = (int(WIDTH / 2), int(HEIGHT / 2))
         screen.blit(textSurface, (textRect.left, textRect.top))
+
+
+def draw_background_rain_snow(when):
+    global screen, WIDTH, HEIGHT, WHITE, DEBUG, weather_raining_hours, weather_snowing_hours
+    if DEBUG:
+        font = pygame.font.Font('C:\\Windows\\Fonts\\MyriadPro-Light.ttf', 30)
+    else:
+        font = pygame.font.Font('MyriadPro-Light.ttf', 30)
+
+    screen.fill(BLACK)
+    screen.blit(draw_background_surface("#68c4ff", "#d1f4ff", WIDTH, HEIGHT), (0, 0))
+
+    if len(weather_raining_hours[when]) == 0 and len(weather_snowing_hours[when]) == 0:
+        textSurface = font.render("Nessuna pioggia o neve", True, WHITE)
+        textRect = textSurface.get_rect()
+        textRect.center = (int(WIDTH / 2), int(HEIGHT / 2))
+        screen.blit(textSurface, (textRect.left, textRect.top))
+    else:
+        if len(weather_raining_hours[when]) > 0:
+            print(weather_raining_hours[when])
+
+        if len(weather_snowing_hours[when]) > 0:
+            print(weather_snowing_hours[when])
 
 
 def draw_input_password(width, height, x, y, text):
@@ -473,17 +526,18 @@ def get_weather():
                 if weathers[0].is_windy():
                     windy_icon = weathers[0].get_windy_icon()
                 if not sleeping:
-                    draw_today_info(icon_today, icon_degree, icon_temp, temp_today, windy_icon)
+                    draw_today_info(icon_today, icon_degree, icon_temp, temp_today, windy_icon, weathers[0].rain_hours, weathers[0].snow_hours)
 
                 icon_now = weathers[2].get_icon_weather(hours_now)
                 temp_now = weathers[0].get_temperature()
+
                 if not sleeping:
-                    draw_now_info(icon_now, temp_now, icon_degree)
+                    draw_now_info(icon_now, temp_now, icon_degree, weathers[2].rain_hours, weathers[2].snow_hours)
 
                 icon_tomorrow = weathers[1].get_icon_weather()
                 temp_tomorrow = weathers[1].get_temperature()
                 if not sleeping:
-                    draw_tomorrow_info(icon_tomorrow, temp_tomorrow, icon_degree)
+                    draw_tomorrow_info(icon_tomorrow, temp_tomorrow, icon_degree, weathers[1].rain_hours, weathers[1].snow_hours)
                 #  print(icon_today, icon_tomorrow, icon_now)
             if sleeping:
                 draw_background_sleeping(screen)
@@ -540,8 +594,9 @@ def translate(string):
 
     return string
 
-def draw_today_info(icon_weather, icon_degree, icon_temp, temperature, windy_icon):
-    global WIDTH, HEIGHT, DEBUG
+
+def draw_today_info(icon_weather, icon_degree, icon_temp, temperature, windy_icon, rain_hours, snow_hours):
+    global WIDTH, HEIGHT, DEBUG, button_today, weather_raining_hours, weather_snowing_hours
 
     if DEBUG:
         url = "C:\\Users\\marco\\PycharmProjects\\Weather\\img\\icons\\"
@@ -551,6 +606,9 @@ def draw_today_info(icon_weather, icon_degree, icon_temp, temperature, windy_ico
 
     # draw main weather icon
     img_rect = draw_image(screen, url + icon_weather, 0.8, 0.8, -70, -40, True)
+    button_today = img_rect.copy()
+    weather_raining_hours[0] = rain_hours.copy()
+    weather_snowing_hours[0] = snow_hours.copy()
 
     x_end = int(WIDTH/2+img_rect.width/2) - 40
     y_start = img_rect.top
@@ -566,8 +624,8 @@ def draw_today_info(icon_weather, icon_degree, icon_temp, temperature, windy_ico
         img_rect = draw_image(screen, url + windy_icon, 0.2, 0.2, x_end , y_start + 100, False)
 
 
-def draw_now_info(icon_weather, temperature, icon_degree):
-    global WIDTH, HEIGHT, DEBUG
+def draw_now_info(icon_weather, temperature, icon_degree, rain_hours, snow_hours):
+    global WIDTH, HEIGHT, DEBUG, button_now, weather_raining_hours, weather_snowing_hours
 
     if DEBUG:
         url = "C:\\Users\\marco\\PycharmProjects\\Weather\\img\\icons\\"
@@ -577,6 +635,9 @@ def draw_now_info(icon_weather, temperature, icon_degree):
 
     # draw weather icon
     img_rect = draw_image(screen, url + icon_weather, 0.3, 0.3, 50, HEIGHT - 150, False)
+    button_now = img_rect.copy()
+    weather_raining_hours[2] = rain_hours.copy()
+    weather_snowing_hours[2] = snow_hours.copy()
 
     x_end = img_rect.width + 60
     y_start = 330
@@ -589,8 +650,8 @@ def draw_now_info(icon_weather, temperature, icon_degree):
     img_rect = draw_image(screen, url + icon_degree, 0.1, 0.1, x_end + img_rect.width, HEIGHT - 150, False)
 
 
-def draw_tomorrow_info(icon_weather, temperature, icon_degree):
-    global WIDTH, HEIGHT, DEBUG
+def draw_tomorrow_info(icon_weather, temperature, icon_degree, rain_hours, snow_hours):
+    global WIDTH, HEIGHT, DEBUG, button_tomorrow, weather_raining_hours, weather_snowing_hours
 
     if DEBUG:
         url = "C:\\Users\\marco\\PycharmProjects\\Weather\\img\\icons\\"
@@ -600,6 +661,9 @@ def draw_tomorrow_info(icon_weather, temperature, icon_degree):
 
     # draw weather icon
     img_rect = draw_image(screen, url + icon_weather, 0.3, 0.3, WIDTH - 280, HEIGHT - 150, False)
+    button_tomorrow = img_rect.copy()
+    weather_raining_hours[1] = rain_hours.copy()
+    weather_snowing_hours[1] = snow_hours.copy()
 
     x_end = img_rect.left + img_rect.width + 10
     y_start = 330
@@ -685,7 +749,7 @@ def draw_background_configuration():
 
 def main():
     global DEBUG, status, mouse_down, mouse_up, mouse_pos_down, mouse_pos_down_old, mouse_pos, mouse_pos_old, \
-        mouse_pos_up, wifi_changing, wifi_index, WAITING_SCREEN_END
+        mouse_pos_up, wifi_changing, wifi_index, WAITING_SCREEN_END, start_time
 
     '''if not DEBUG:
         pygame.mouse.set_visible(False)'''
@@ -868,10 +932,35 @@ def main():
                 waiting_screen = None
         elif status == "show weather":
             if clicked:
-                status = "show configuration"
+                if check_hit_icon_today(mouse_pos):
+                    status = "raining snow today"
+                elif check_hit_icon_tomorrow(mouse_pos):
+                    status = "raining snow tomorrow"
+                elif check_hit_icon_now(mouse_pos):
+                    status = "raining snow now"
+                else:
+                    status = "show configuration"
                 clicked = False
             else:
                 get_weather()
+        elif status == "raining snow today":
+            draw_background_rain_snow(0)
+            if clicked:
+                start_time = None
+                status = "show weather"
+                clicked = False
+        elif status == "raining snow tomorrow":
+            draw_background_rain_snow(2)
+            if clicked:
+                start_time = None
+                status = "show weather"
+                clicked = False
+        elif status == "raining snow now":
+            draw_background_rain_snow(1)
+            if clicked:
+                start_time = None
+                status = "show weather"
+                clicked = False
         elif status == "show configuration":
             draw_background_configuration()
             if clicked:

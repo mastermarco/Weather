@@ -54,10 +54,18 @@ class JsonWeather:
                         self.weathers[2].weather = weather
                         self.weathers[2].cloud_perc = t["clouds"]["all"]
                         self.weathers[2].wind_speed = t["wind"]["speed"]
+                        if weather_tmp.find("rain") > - 1:
+                            self.weathers[2].rain_hours.append(t["dt_txt"].split(" ")[1][:-3])
+                        elif weather_tmp.find("snow") > - 1:
+                            self.weathers[2].snow_hours.append(t["dt_txt"].split(" ")[1][:-3])
                     delta = dt_tmp - today
                     if delta.days <= 0:
                         # print("today")
                         # print(delta.days, temp_min, temp_max, humidity, weather, cloud_perc, wind_speed, t["dt_txt"])
+                        if weather_tmp.find("rain") > -1:
+                            self.weathers[0].rain_hours.append(t["dt_txt"].split(" ")[1][:-3])
+                        elif weather_tmp.find("snow") > -1:
+                            self.weathers[0].snow_hours.append(t["dt_txt"].split(" ")[1][:-3])
                         if 'rain' in t and '3h' in t["rain"]:
                             self.weathers[0].rain_volume.append(t["rain"]["3h"])
                             if float(t["rain"]["3h"]) > 0.5:
@@ -92,9 +100,13 @@ class JsonWeather:
                             self.weathers[0].weather = weather_tmp
                         elif weather_tmp == "clear sky" or self.weathers[0].weather is None:
                             self.weathers[0].weather = weather_tmp
-                    else:
+                    elif delta.days == 1:
                         # print("tomorrow")
                         # print(delta.days, temp_min, temp_max, humidity, weather, cloud_perc, wind_speed, t["dt_txt"])
+                        if weather_tmp.find("rain") > -1:
+                            self.weathers[1].rain_hours.append(t["dt_txt"].split(" ")[1][:-3])
+                        elif weather_tmp.find("snow") > -1:
+                            self.weathers[1].snow_hours.append(t["dt_txt"].split(" ")[1][:-3])
                         if 'rain' in t and '3h' in t["rain"]:
                             self.weathers[1].rain_volume.append(t["rain"]["3h"])
                             if float(t["rain"]["3h"]) > 0.5:
@@ -130,7 +142,6 @@ class JsonWeather:
                         elif weather_tmp == "clear sky" or self.weathers[1].weather is None:
                             self.weathers[1].weather = weather_tmp
         except Exception as e:
-            print(e)
             weathers = [None, None, None]
 
     def get_weathers(self):
