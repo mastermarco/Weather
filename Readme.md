@@ -14,3 +14,6 @@ It's necessary to fill the configuration.py file with these settings:
 
 
 Weather API provided by openweathermap.org
+
+#### Run
+> sudo Python3 \__main__.py
