@@ -5,6 +5,7 @@ from datetime import date
 import time as Time
 import pygame
 from pygame import *
+from random import randint
 import os
 import subprocess
 import numpy
@@ -35,6 +36,9 @@ button_tomorrow = None
 
 weather_raining_hours = [[], [], []]
 weather_snowing_hours = [[], [], []]
+
+color_1 = None
+color_2 = None
 
 #os.environ["SDL_FBDEV"] = "/dev/fb0"
 #os.environ["SDL_MOUSEDRV"] = "TSLIB"
@@ -339,41 +343,64 @@ def draw_background(status):
 
     if status in ("search wifi", "select_wifi"):
         screen.fill(BLACK)
-        screen.blit(draw_background_surface("#68c4ff", "#d1f4ff", WIDTH, HEIGHT), (0, 0))
+        screen.blit(draw_background_surface(get_color(True), get_color(False), WIDTH, HEIGHT), (0, 0))
     elif status in ("insert password wifi"):
         screen.fill(BLACK)
-        screen.blit(draw_background_surface("#68c4ff", "#d1f4ff", WIDTH, HEIGHT), (0, 0))
+        screen.blit(draw_background_surface(get_color(True), get_color(False), WIDTH, HEIGHT), (0, 0))
     elif status in ("check_password_wifi"):
         screen.fill(BLACK)
-        screen.blit(draw_background_surface("#68c4ff", "#d1f4ff", WIDTH, HEIGHT), (0, 0))
+        screen.blit(draw_background_surface(get_color(True), get_color(False), WIDTH, HEIGHT), (0, 0))
     elif status in ("authenticating_password_wifi"):
         screen.fill(BLACK)
-        screen.blit(draw_background_surface("#68c4ff", "#d1f4ff", WIDTH, HEIGHT), (0, 0))
+        screen.blit(draw_background_surface(get_color(True), get_color(False), WIDTH, HEIGHT), (0, 0))
         textSurface = font.render("Verifying authentication...", True, WHITE)
         textRect = textSurface.get_rect()
         textRect.center = (int(WIDTH / 2), int(HEIGHT / 2))
         screen.blit(textSurface, (textRect.left, textRect.top))
     elif status in ("check_password_wifi_wrong"):
         screen.fill(BLACK)
-        screen.blit(draw_background_surface("#68c4ff", "#d1f4ff", WIDTH, HEIGHT), (0, 0))
+        screen.blit(draw_background_surface(get_color(True), get_color(False), WIDTH, HEIGHT), (0, 0))
         textSurface = font.render("Wrong password", True, WHITE)
         textRect = textSurface.get_rect()
         textRect.center = (int(WIDTH / 2), int(HEIGHT / 2))
         screen.blit(textSurface, (textRect.left, textRect.top))
     elif status in ("password_wifi_wrong"):
         screen.fill(BLACK)
-        screen.blit(draw_background_surface("#68c4ff", "#d1f4ff", WIDTH, HEIGHT), (0, 0))
+        screen.blit(draw_background_surface(get_color(True), get_color(False), WIDTH, HEIGHT), (0, 0))
         textSurface = font.render("Wrong password", True, WHITE)
         textRect = textSurface.get_rect()
         textRect.center = (int(WIDTH / 2), int(HEIGHT / 2))
         screen.blit(textSurface, (textRect.left, textRect.top))
     elif status in ("connected"):
         screen.fill(BLACK)
-        screen.blit(draw_background_surface("#68c4ff", "#d1f4ff", WIDTH, HEIGHT), (0, 0))
+        screen.blit(draw_background_surface(get_color(True), get_color(False), WIDTH, HEIGHT), (0, 0))
         textSurface = font.render("Connected", True, WHITE)
         textRect = textSurface.get_rect()
         textRect.center = (int(WIDTH / 2), int(HEIGHT / 2))
         screen.blit(textSurface, (textRect.left, textRect.top))
+
+
+def refresh_colors():
+    global color_1, color_2
+    color_1 = get_random_color(True)
+    color_2 = get_random_color(False)
+
+
+def get_color(first=True):
+    global color1, color2, color_1, color_2
+    if first:
+        return color_1
+    else:
+        return color_2
+
+
+def get_random_color(first=True):
+    global color1, color2
+
+    if first:
+        return color1[randint(0, len(color1)-1)]
+    else:
+        return color2[randint(0, len(color2) - 1)]
 
 
 def draw_background_rain_snow(when):
@@ -384,7 +411,7 @@ def draw_background_rain_snow(when):
         font = pygame.font.Font('MyriadPro-Light.ttf', 30)
 
     screen.fill(BLACK)
-    screen.blit(draw_background_surface("#68c4ff", "#d1f4ff", WIDTH, HEIGHT), (0, 0))
+    screen.blit(draw_background_surface(get_color(True), get_color(False), WIDTH, HEIGHT), (0, 0))
 
     if len(weather_raining_hours[when]) == 0 and len(weather_snowing_hours[when]) == 0:
         textSurface = font.render("Nessuna pioggia o neve", True, WHITE)
@@ -392,11 +419,40 @@ def draw_background_rain_snow(when):
         textRect.center = (int(WIDTH / 2), int(HEIGHT / 2))
         screen.blit(textSurface, (textRect.left, textRect.top))
     else:
-        if len(weather_raining_hours[when]) > 0:
-            print(weather_raining_hours[when])
+        s0 = 4
+        raining = len(weather_raining_hours[when]) > 0
+        if raining:
+            snowing = len(weather_snowing_hours[when]) > 0
+            if snowing:
+                s0 = 8
+            txt = "-".join(weather_raining_hours[when])
+            textSurface = font.render("Pioggia", True, WHITE)
+            textRect = textSurface.get_rect()
+            textRect.center = (int(WIDTH / 2), int(HEIGHT / s0))
+            screen.blit(textSurface, (textRect.left, textRect.top))
+
+            textSurface = font.render(txt, True, WHITE)
+            textRect = textSurface.get_rect()
+            textRect.center = (int(WIDTH / 2), int(HEIGHT / s0)*2)
+            screen.blit(textSurface, (textRect.left, textRect.top))
 
         if len(weather_snowing_hours[when]) > 0:
-            print(weather_snowing_hours[when])
+            txt = "-".join(weather_snowing_hours[when])
+            t = 3
+            t2 = 4
+            if not raining:
+                t = 1
+                t2 = 2
+            textSurface = font.render("Neve", True, WHITE)
+            textRect = textSurface.get_rect()
+            textRect.center = (int(WIDTH / 2), int(HEIGHT / s0)*t)
+            screen.blit(textSurface, (textRect.left, textRect.top))
+
+            textSurface = font.render(txt, True, WHITE)
+            textRect = textSurface.get_rect()
+            textRect.center = (int(WIDTH / 2), int(HEIGHT / s0)*t2)
+            screen.blit(textSurface, (textRect.left, textRect.top))
+
 
 
 def draw_input_password(width, height, x, y, text):
@@ -489,7 +545,7 @@ def check_connection(scheme):
         if internet_on():
             os.system("sudo ifdown wlan0")
         conn = scheme.activate()
-        #print(dump(conn))
+        #dump(conn)
         #print("connection: ", conn)
     except:
         print("exception!!")
@@ -510,8 +566,10 @@ def get_weather():
         if internet_on():
             hours_now = int(datetime.datetime.now().hour)
             start_time = Time.time()
+            jsonWeather = None
             jsonWeather = JsonWeather("http://api.openweathermap.org/data/2.5/forecast?id=6542283&appid=" + API_KEY_W + "&units=metric")
             weathers = jsonWeather.get_weathers()
+
             if not weathers[0] is None:
 
                 ''' weathers[0] today
@@ -541,6 +599,14 @@ def get_weather():
                 #  print(icon_today, icon_tomorrow, icon_now)
             if sleeping:
                 draw_background_sleeping(screen)
+
+            for i in weathers:
+                i.rain_volume.clear()
+                i.snow_volume.clear()
+                i.rain_hours.clear()
+                i.snow_hours.clear()
+                del i
+            del jsonWeather
         else:
             status = "search wifi"
 
@@ -551,6 +617,8 @@ def check_movements():
         last_motion = Time.time()
 
     if Time.time() - last_motion >= SLEEPING_TIME:
+        last_motion = Time.time()
+        refresh_colors()
         # todo check motion sensor here
         # if motion last_motion = Time.time(), start_time = None return True else return False
         return False
@@ -703,11 +771,13 @@ def get_font_surface(size):
 
 
 def draw_background_weather(hours):
-    global screen, WIDTH, HEIGHT
+    global screen, WIDTH, HEIGHT, color_1, color_2
     if DEBUG:
         font = pygame.font.Font('C:\\Windows\\Fonts\\MyriadPro-Light.ttf', 30)
     else:
         font = pygame.font.Font('MyriadPro-Light.ttf', 30)
+
+    # todo based on the weather we can also change the background colors for DAY and NIGHT
     col1 = "#001f45"
     col2 = "#003c87"
     if hours > 6 and hours < 18:
@@ -753,6 +823,8 @@ def main():
 
     '''if not DEBUG:
         pygame.mouse.set_visible(False)'''
+
+    refresh_colors()
     wifi = pywifi.PyWiFi()
     iface = wifi.interfaces()[0]
     schema = None
@@ -932,11 +1004,11 @@ def main():
                 waiting_screen = None
         elif status == "show weather":
             if clicked:
-                if check_hit_icon_today(mouse_pos):
+                if not button_today is None and check_hit_icon_today(mouse_pos):
                     status = "raining snow today"
-                elif check_hit_icon_tomorrow(mouse_pos):
+                elif not button_tomorrow is None and check_hit_icon_tomorrow(mouse_pos):
                     status = "raining snow tomorrow"
-                elif check_hit_icon_now(mouse_pos):
+                elif not button_now is None and check_hit_icon_now(mouse_pos):
                     status = "raining snow now"
                 else:
                     status = "show configuration"
@@ -950,13 +1022,13 @@ def main():
                 status = "show weather"
                 clicked = False
         elif status == "raining snow tomorrow":
-            draw_background_rain_snow(2)
+            draw_background_rain_snow(1)
             if clicked:
                 start_time = None
                 status = "show weather"
                 clicked = False
         elif status == "raining snow now":
-            draw_background_rain_snow(1)
+            draw_background_rain_snow(2)
             if clicked:
                 start_time = None
                 status = "show weather"
