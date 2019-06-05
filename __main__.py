@@ -404,54 +404,61 @@ def get_random_color(first=True):
 
 
 def draw_background_rain_snow(when):
-    global screen, WIDTH, HEIGHT, WHITE, DEBUG, weather_raining_hours, weather_snowing_hours
+    global screen, WIDTH, HEIGHT, WHITE, DEBUG, weather_raining_hours, weather_snowing_hours, start_time, status, sleeping, HIGH_RAIN
     if DEBUG:
         font = pygame.font.Font('C:\\Windows\\Fonts\\MyriadPro-Light.ttf', 30)
     else:
         font = pygame.font.Font('MyriadPro-Light.ttf', 30)
 
-    screen.fill(BLACK)
-    screen.blit(draw_background_surface(get_color(True), get_color(False), WIDTH, HEIGHT), (0, 0))
+    sleeping = not check_movements()
 
-    if len(weather_raining_hours[when]) == 0 and len(weather_snowing_hours[when]) == 0:
-        textSurface = font.render("Nessuna pioggia o neve", True, WHITE)
-        textRect = textSurface.get_rect()
-        textRect.center = (int(WIDTH / 2), int(HEIGHT / 2))
-        screen.blit(textSurface, (textRect.left, textRect.top))
+    if sleeping:
+        draw_background_sleeping(screen)
     else:
-        s0 = 4
-        raining = len(weather_raining_hours[when]) > 0
-        if raining:
-            snowing = len(weather_snowing_hours[when]) > 0
-            if snowing:
-                s0 = 8
-            txt = "-".join(weather_raining_hours[when])
-            textSurface = font.render("Pioggia", True, WHITE)
-            textRect = textSurface.get_rect()
-            textRect.center = (int(WIDTH / 2), int(HEIGHT / s0))
-            screen.blit(textSurface, (textRect.left, textRect.top))
+        screen.fill(BLACK)
+        screen.blit(draw_background_surface(get_color(True), get_color(False), WIDTH, HEIGHT), (0, 0))
 
-            textSurface = font.render(txt, True, WHITE)
+        if len(weather_raining_hours[when]) == 0 and len(weather_snowing_hours[when]) == 0:
+            textSurface = font.render("Nessuna pioggia o neve", True, WHITE)
             textRect = textSurface.get_rect()
-            textRect.center = (int(WIDTH / 2), int(HEIGHT / s0)*2)
+            textRect.center = (int(WIDTH / 2), int(HEIGHT / 2))
             screen.blit(textSurface, (textRect.left, textRect.top))
+        else:
+            s0 = 4
+            raining = len(weather_raining_hours[when]) > 0
+            if raining:
+                snowing = len(weather_snowing_hours[when]) > 0
+                if snowing:
+                    s0 = 8
+                for r in weather_raining_hours[when]:
+                    txt = " ".join(r.rain_snow_hours) + " ^" if r.rain_volume > HIGH_RAIN else " ".join(r.rain_snow_hours)
+                textSurface = font.render("Pioggia", True, WHITE)
+                textRect = textSurface.get_rect()
+                textRect.center = (int(WIDTH / 2), int(HEIGHT / s0))
+                screen.blit(textSurface, (textRect.left, textRect.top))
 
-        if len(weather_snowing_hours[when]) > 0:
-            txt = "-".join(weather_snowing_hours[when])
-            t = 3
-            t2 = 4
-            if not raining:
-                t = 1
-                t2 = 2
-            textSurface = font.render("Neve", True, WHITE)
-            textRect = textSurface.get_rect()
-            textRect.center = (int(WIDTH / 2), int(HEIGHT / s0)*t)
-            screen.blit(textSurface, (textRect.left, textRect.top))
+                textSurface = font.render(txt, True, WHITE)
+                textRect = textSurface.get_rect()
+                textRect.center = (int(WIDTH / 2), int(HEIGHT / s0)*2)
+                screen.blit(textSurface, (textRect.left, textRect.top))
 
-            textSurface = font.render(txt, True, WHITE)
-            textRect = textSurface.get_rect()
-            textRect.center = (int(WIDTH / 2), int(HEIGHT / s0)*t2)
-            screen.blit(textSurface, (textRect.left, textRect.top))
+            if len(weather_snowing_hours[when]) > 0:
+                for r in weather_raining_hours[when]:
+                    txt = " ".join(r.rain_snow_hours)
+                t = 3
+                t2 = 4
+                if not raining:
+                    t = 1
+                    t2 = 2
+                textSurface = font.render("Neve", True, WHITE)
+                textRect = textSurface.get_rect()
+                textRect.center = (int(WIDTH / 2), int(HEIGHT / s0)*t)
+                screen.blit(textSurface, (textRect.left, textRect.top))
+
+                textSurface = font.render(txt, True, WHITE)
+                textRect = textSurface.get_rect()
+                textRect.center = (int(WIDTH / 2), int(HEIGHT / s0)*t2)
+                screen.blit(textSurface, (textRect.left, textRect.top))
 
 
 
@@ -570,7 +577,7 @@ def get_weather():
             jsonWeather = JsonWeather("http://api.openweathermap.org/data/2.5/forecast?id=6542283&appid=" + API_KEY_W + "&units=metric")
             weathers = jsonWeather.get_weathers()
 
-            if not weathers[0] is None:
+            if not weathers[1] is None:
 
                 ''' weathers[0] today
                 # weathers[1] tomorrow
@@ -612,16 +619,17 @@ def get_weather():
 
 
 def check_movements():
-    global last_motion, start_time, SLEEPING_TIME
+    global last_motion, start_time, SLEEPING_TIME, DEBUG
     if last_motion is None:
         last_motion = Time.time()
 
-    if Time.time() - last_motion >= SLEEPING_TIME:
-        last_motion = Time.time()
-        refresh_colors()
-        # todo check motion sensor here
-        # if motion last_motion = Time.time(), start_time = None return True else return False
-        return False
+    if not DEBUG:
+        if Time.time() - last_motion >= SLEEPING_TIME:
+            last_motion = Time.time()
+            refresh_colors()
+            # todo check motion sensor here
+            # if motion last_motion = Time.time(), start_time = None return True else return False
+            return False
 
     return True
 
@@ -681,6 +689,12 @@ def draw_today_info(icon_weather, icon_degree, icon_temp, temperature, windy_ico
     x_end = int(WIDTH/2+img_rect.width/2) - 40
     y_start = img_rect.top
 
+    # draw label
+    font = get_font_surface(20)
+    textSurface = font.render("Oggi", True, WHITE)
+    img_rect = textSurface.get_rect()
+    screen.blit(textSurface, (x_end, y_start-25))
+
     # draw main temperature
     font = get_font_surface(80)
     textSurface = font.render(str(temperature), True, WHITE)
@@ -710,6 +724,12 @@ def draw_now_info(icon_weather, temperature, icon_degree, rain_hours, snow_hours
     x_end = img_rect.width + 60
     y_start = 330
 
+    # draw label
+    font = get_font_surface(20)
+    textSurface = font.render("Ora", True, WHITE)
+    img_rect = textSurface.get_rect()
+    screen.blit(textSurface, (x_end, y_start-25))
+
     # draw main temperature
     font = get_font_surface(70)
     textSurface = font.render(str(temperature), True, WHITE)
@@ -735,6 +755,12 @@ def draw_tomorrow_info(icon_weather, temperature, icon_degree, rain_hours, snow_
 
     x_end = img_rect.left + img_rect.width + 10
     y_start = 330
+
+    # draw label
+    font = get_font_surface(20)
+    textSurface = font.render("Domani", True, WHITE)
+    img_rect = textSurface.get_rect()
+    screen.blit(textSurface, (x_end, y_start-25))
 
     # draw main temperature
     font = get_font_surface(70)
@@ -815,6 +841,11 @@ def draw_background_configuration():
     # img_rect.left = img_rect.left + padding_left
     # img_rect.top = img_rect.top + padding_top
     screen.blit(img_surf, (img_rect.left, img_rect.top))
+
+
+def wakeup():
+    global last_motion
+    last_motion = Time.time()
 
 
 def main():
@@ -1004,32 +1035,41 @@ def main():
                 waiting_screen = None
         elif status == "show weather":
             if clicked:
-                if not button_today is None and check_hit_icon_today(mouse_pos):
-                    status = "raining snow today"
-                elif not button_tomorrow is None and check_hit_icon_tomorrow(mouse_pos):
-                    status = "raining snow tomorrow"
-                elif not button_now is None and check_hit_icon_now(mouse_pos):
-                    status = "raining snow now"
+                if sleeping:
+                    wakeup()
                 else:
-                    status = "show configuration"
+                    if not button_today is None and check_hit_icon_today(mouse_pos):
+                        status = "raining snow today"
+                    elif not button_tomorrow is None and check_hit_icon_tomorrow(mouse_pos):
+                        status = "raining snow tomorrow"
+                    elif not button_now is None and check_hit_icon_now(mouse_pos):
+                        status = "raining snow now"
+                    else:
+                        status = "show configuration"
                 clicked = False
             else:
                 get_weather()
         elif status == "raining snow today":
             draw_background_rain_snow(0)
             if clicked:
+                if sleeping:
+                    wakeup()
                 start_time = None
                 status = "show weather"
                 clicked = False
         elif status == "raining snow tomorrow":
             draw_background_rain_snow(1)
             if clicked:
+                if sleeping:
+                    wakeup()
                 start_time = None
                 status = "show weather"
                 clicked = False
         elif status == "raining snow now":
             draw_background_rain_snow(2)
             if clicked:
+                if sleeping:
+                    wakeup()
                 start_time = None
                 status = "show weather"
                 clicked = False
@@ -1046,6 +1086,7 @@ def main():
         pygame.display.flip()
         # --- Limit to 60 frames per second
         clock.tick(60)
+        clicked = False
     return False
 
 
